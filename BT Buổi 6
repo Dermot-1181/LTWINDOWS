@@ -1,0 +1,238 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using WindowsFormsApp1.Modles;
+
+namespace WindowsFormsApp1
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+                    }
+
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!ValidateInput()) return;
+
+                using (StudentDBContext context = new StudentDBContext())
+                {
+                    string studentID = txtStudentID.Text.Trim();
+
+                    // Kiểm tra xem mã sinh viên đã tồn tại chưa
+                    var existingStudent = context.STUDENTs.FirstOrDefault(s => s.STUDENTID == studentID);
+                    if (existingStudent != null)
+                    {
+                        MessageBox.Show("Mã số sinh viên đã tồn tại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Thêm mới sinh viên
+                    STUDENT newStudent = new STUDENT
+                    {
+                        STUDENTID = studentID,
+                        FULLNAME = txtFullName.Text.Trim(),
+                        FACULTYID = (int)cmbFaculty.SelectedValue,
+                        AVERAGESCORE = float.Parse(txtAverageScore.Text.Trim())
+                    };
+
+                    context.STUDENTs.Add(newStudent);
+                    context.SaveChanges();
+
+                    MessageBox.Show("Thêm mới dữ liệu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // Load lại danh sách
+                    
+                    BindGrid(context.STUDENTs.ToList());
+                    ResetInput();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                StudentDBContext context = new StudentDBContext();
+                // Lấy danh sách khoa
+                List<FACULTY> listFacultys = context.FACULTies.ToList();
+                // Lấy danh sách sinh viên
+                List<STUDENT> listStudents = context.STUDENTs.ToList();
+
+                // Gọi hàm load dữ liệu vào ComboBox và GridView
+                FillFacultyCombobox(listFacultys);
+                BindGrid(listStudents);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+        }
+        private void FillFacultyCombobox(List<FACULTY> listFacultys)
+        {
+            this.cmbFaculty.DataSource = listFacultys;
+            this.cmbFaculty.DisplayMember = "FacultyName";
+            this.cmbFaculty.ValueMember = "FacultyID";
+        }
+
+        private void BindGrid(List<STUDENT> listStudents)
+        {
+            dataGridView1.Rows.Clear();
+            foreach (var item in listStudents)
+            {
+                int index = dataGridView1.Rows.Add();
+                dataGridView1.Rows[index].Cells[0].Value = item.STUDENTID;
+                dataGridView1.Rows[index].Cells[1].Value = item.FULLNAME;
+                dataGridView1.Rows[index].Cells[2].Value = item.FACULTY.FACULTYNAME;
+                dataGridView1.Rows[index].Cells[3].Value = item.AVERAGESCORE;
+            }
+        }
+        
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!ValidateInput()) return;
+
+                using (StudentDBContext context = new StudentDBContext())
+                {
+                    string studentID = txtStudentID.Text.Trim();
+
+                    // Tìm sinh viên cần sửa
+                    STUDENT existingStudent = context.STUDENTs.FirstOrDefault(s => s.STUDENTID == studentID);
+                    if (existingStudent == null)
+                    {
+                        MessageBox.Show("Không tìm thấy MSSV cần sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Cập nhật thông tin sinh viên
+                    existingStudent.FULLNAME = txtFullName.Text.Trim();
+                    existingStudent.FACULTYID = (int)cmbFaculty.SelectedValue;
+                    existingStudent.AVERAGESCORE = float.Parse(txtAverageScore.Text.Trim());
+
+                    context.SaveChanges();
+
+                    MessageBox.Show("Cập nhật dữ liệu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // Load lại danh sách
+                    BindGrid(context.STUDENTs.ToList());
+                    ResetInput();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private bool ValidateInput()
+        {
+            if (string.IsNullOrWhiteSpace(txtStudentID.Text) ||
+                string.IsNullOrWhiteSpace(txtFullName.Text) ||
+                string.IsNullOrWhiteSpace(txtAverageScore.Text))
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (txtStudentID.Text.Length != 10)
+            {
+                MessageBox.Show("Mã số sinh viên phải có 10 kí tự!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (!float.TryParse(txtAverageScore.Text, out float _))
+            {
+                MessageBox.Show("Điểm trung bình phải là số hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ResetInput()
+        {
+            txtStudentID.Clear();
+            txtFullName.Clear();
+            txtAverageScore.Clear();
+            cmbFaculty.SelectedIndex = 0;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string studentID = txtStudentID.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(studentID))
+                {
+                    MessageBox.Show("Vui lòng nhập mã số sinh viên cần xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                using (StudentDBContext context = new StudentDBContext())
+                {
+                    // Tìm sinh viên theo MSSV
+                    STUDENT studentToDelete = context.STUDENTs.FirstOrDefault(s => s.STUDENTID == studentID);
+
+                    if (studentToDelete == null)
+                    {
+                        MessageBox.Show("Không tìm thấy MSSV cần xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    else
+                    {
+                        DialogResult result = MessageBox.Show("Bạn có chắc chắn muốn xóa sinh viên này không?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (result == DialogResult.Yes)
+                        {
+                            context.STUDENTs.Remove(studentToDelete);
+                            context.SaveChanges();
+
+                            MessageBox.Show("Xóa sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            BindGrid(context.STUDENTs.ToList());
+                            ResetInput();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+}
