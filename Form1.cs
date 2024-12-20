@@ -2,78 +2,189 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using WindowsFormsApp1.Modles;
+using De01.Data;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace WindowsFormsApp1
+namespace De01
 {
     public partial class Form1 : Form
     {
+
         public Form1()
         {
             InitializeComponent();
-        }
-
-        private void groupBox1_Enter(object sender, EventArgs e)
-        {
-                    }
-
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
+            
 
         }
 
-        private void label2_Click(object sender, EventArgs e)
+        private Model1 context = new Model1();
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
         {
 
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void txthoten_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void cbblophoc_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void ngaysinh_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void bttim_Click(object sender, EventArgs e)
         {
             try
             {
-                if (!ValidateInput()) return;
+                
+                string keyword = txttim.Text.Trim();
 
-                using (StudentDBContext context = new StudentDBContext())
+               
+                List<Sinhvien> listSinhVien;
+                if (string.IsNullOrEmpty(keyword))
                 {
-                    string studentID = txtStudentID.Text.Trim();
-
-                    // Kiểm tra xem mã sinh viên đã tồn tại chưa
-                    var existingStudent = context.STUDENTs.FirstOrDefault(s => s.STUDENTID == studentID);
-                    if (existingStudent != null)
-                    {
-                        MessageBox.Show("Mã số sinh viên đã tồn tại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    // Thêm mới sinh viên
-                    STUDENT newStudent = new STUDENT
-                    {
-                        STUDENTID = studentID,
-                        FULLNAME = txtFullName.Text.Trim(),
-                        FACULTYID = (int)cmbFaculty.SelectedValue,
-                        AVERAGESCORE = float.Parse(txtAverageScore.Text.Trim())
-                    };
-
-                    context.STUDENTs.Add(newStudent);
-                    context.SaveChanges();
-
-                    MessageBox.Show("Thêm mới dữ liệu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    // Load lại danh sách
-                    
-                    BindGrid(context.STUDENTs.ToList());
-                    ResetInput();
+                    listSinhVien = context.Sinhviens.ToList();
                 }
+                else
+                {
+                   
+                    listSinhVien = context.Sinhviens
+                        .Where(sv => sv.HoTenSV.Contains(keyword))
+                        .ToList();
+                }
+
+             
+                if (listSinhVien.Count == 0)
+                {
+                    MessageBox.Show($"Không tìm thấy sinh viên nào!", "Kết quả tìm kiếm", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+
+              
+                BindGrid(listSinhVien);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+        private void btthem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Sinhvien sv = new Sinhvien
+                {
+                    MaSV = txtMsv.Text,
+                    HoTenSV = txthoten.Text,
+                    NgaySinh = ngaysinh.Value,
+                    MaLop = cbblophoc.SelectedValue.ToString()
+                };
+                context.Sinhviens.Add(sv);
+                context.SaveChanges();
+                MessageBox.Show("Thêm sinh viên thành công!");
+                RefreshForm();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi: " + ex.Message);
+            }
+        }
+
+        private void btxoa_Click(object sender, EventArgs e)
+        {
+            
+
+        }
+
+        private void btsua_Click(object sender, EventArgs e)
+        {
+
+            try
+            {
+                if (string.IsNullOrEmpty(txtMsv.Text))
+                {
+                    MessageBox.Show("Vui lòng nhập mã sinh viên để sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var maSV = txtMsv.Text.Trim();
+                var sv = context.Sinhviens.FirstOrDefault(x => x.MaSV == maSV);
+
+                if (sv == null)
+                {
+                    MessageBox.Show("Không tìm thấy sinh viên có mã: " + maSV, "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                btluu.Enabled = true;
+                btkluu.Enabled = true;
+
+                MessageBox.Show("Đang chỉnh sửa sinh viên. Nhấn 'Lưu' để hoàn tất hoặc 'Không Lưu' để hủy bỏ.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+        }
+
+
+        private void btluu_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                
+                context.SaveChanges();
+                MessageBox.Show("Thao tác đã được lưu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                RefreshForm();
+                btluu.Enabled = false;
+                btkluu.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btkluu_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void bthoat_Click(object sender, EventArgs e)
+        {
+            this.Close(); var result = MessageBox.Show("Bạn có chắc chắn muốn thoát không?", "Xác nhận thoát", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            {
+                this.Close();
+            }
+        }
+
+        private void RefreshForm()
+        {
+            txtMsv.Clear();
+            txthoten.Clear();
+            ngaysinh.Value = DateTime.Now;
+            cbblophoc.SelectedIndex = -1;
+            var listSinhVien = context.Sinhviens.ToList();
+            BindGrid(listSinhVien);
+        }
+
+        private void textBox3_TextChanged(object sender, EventArgs e)
+        {
 
         }
 
@@ -81,158 +192,100 @@ namespace WindowsFormsApp1
         {
             try
             {
-                StudentDBContext context = new StudentDBContext();
-                // Lấy danh sách khoa
-                List<FACULTY> listFacultys = context.FACULTies.ToList();
-                // Lấy danh sách sinh viên
-                List<STUDENT> listStudents = context.STUDENTs.ToList();
 
-                // Gọi hàm load dữ liệu vào ComboBox và GridView
-                FillFacultyCombobox(listFacultys);
-                BindGrid(listStudents);
+                var listLop = context.Lops.ToList();
+                FillLopCombobox(listLop);
+
+                var listSinhVien = context.Sinhviens.ToList();
+                BindGrid(listSinhVien);
+
+
+                btluu.Enabled = false;
+                btkluu.Enabled = false;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Lỗi: " + ex.Message);
             }
-
         }
-        private void FillFacultyCombobox(List<FACULTY> listFacultys)
+        private void FillLopCombobox(List<Lop> listLop)
         {
-            this.cmbFaculty.DataSource = listFacultys;
-            this.cmbFaculty.DisplayMember = "FacultyName";
-            this.cmbFaculty.ValueMember = "FacultyID";
+            cbblophoc.DataSource = listLop;
+            cbblophoc.DisplayMember = "TenLop";
+            cbblophoc.ValueMember = "MaLop";
         }
-
-        private void BindGrid(List<STUDENT> listStudents)
+        private void BindGrid(List<Sinhvien> listSinhVien)
         {
             dataGridView1.Rows.Clear();
-            foreach (var item in listStudents)
+            foreach (var sv in listSinhVien)
             {
                 int index = dataGridView1.Rows.Add();
-                dataGridView1.Rows[index].Cells[0].Value = item.STUDENTID;
-                dataGridView1.Rows[index].Cells[1].Value = item.FULLNAME;
-                dataGridView1.Rows[index].Cells[2].Value = item.FACULTY.FACULTYNAME;
-                dataGridView1.Rows[index].Cells[3].Value = item.AVERAGESCORE;
+                dataGridView1.Rows[index].Cells[0].Value = sv.MaSV;
+                dataGridView1.Rows[index].Cells[1].Value = sv.HoTenSV;
+                dataGridView1.Rows[index].Cells[2].Value = sv.NgaySinh.HasValue ? sv.NgaySinh.Value.ToString("dd/MM/yyyy") : "";
+                dataGridView1.Rows[index].Cells[3].Value = sv.Lop.TenLop;
             }
         }
-        
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-
+            if (e.RowIndex >= 0)
+            {
+                DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
+                txtMsv.Text = row.Cells[0].Value.ToString();
+                txthoten.Text = row.Cells[1].Value.ToString();
+                ngaysinh.Value = DateTime.Parse(row.Cells[2].Value.ToString());
+                cbblophoc.Text = row.Cells[3].Value.ToString();
+            }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            try
+            if (e.RowIndex >= 0)
             {
-                if (!ValidateInput()) return;
+                DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
+                txtMsv.Text = row.Cells[0].Value.ToString();
 
-                using (StudentDBContext context = new StudentDBContext())
-                {
-                    string studentID = txtStudentID.Text.Trim();
-
-                    // Tìm sinh viên cần sửa
-                    STUDENT existingStudent = context.STUDENTs.FirstOrDefault(s => s.STUDENTID == studentID);
-                    if (existingStudent == null)
-                    {
-                        MessageBox.Show("Không tìm thấy MSSV cần sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    // Cập nhật thông tin sinh viên
-                    existingStudent.FULLNAME = txtFullName.Text.Trim();
-                    existingStudent.FACULTYID = (int)cmbFaculty.SelectedValue;
-                    existingStudent.AVERAGESCORE = float.Parse(txtAverageScore.Text.Trim());
-
-                    context.SaveChanges();
-
-                    MessageBox.Show("Cập nhật dữ liệu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    // Load lại danh sách
-                    BindGrid(context.STUDENTs.ToList());
-                    ResetInput();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txthoten.Text = row.Cells[1].Value.ToString();
+                ngaysinh.Value = DateTime.Parse(row.Cells[2].Value.ToString());
+                cbblophoc.Text = row.Cells[3].Value.ToString();
             }
         }
 
-        private bool ValidateInput()
-        {
-            if (string.IsNullOrWhiteSpace(txtStudentID.Text) ||
-                string.IsNullOrWhiteSpace(txtFullName.Text) ||
-                string.IsNullOrWhiteSpace(txtAverageScore.Text))
-            {
-                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
-            if (txtStudentID.Text.Length != 10)
-            {
-                MessageBox.Show("Mã số sinh viên phải có 10 kí tự!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
-            if (!float.TryParse(txtAverageScore.Text, out float _))
-            {
-                MessageBox.Show("Điểm trung bình phải là số hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
-            return true;
-        }
-
-        private void ResetInput()
-        {
-            txtStudentID.Clear();
-            txtFullName.Clear();
-            txtAverageScore.Clear();
-            cmbFaculty.SelectedIndex = 0;
-        }
-
-        private void button3_Click(object sender, EventArgs e)
+        private void button1_MouseClick(object sender, MouseEventArgs e)
         {
             try
             {
-                string studentID = txtStudentID.Text.Trim();
+                
+                string keyword = txttim.Text.Trim();
 
-                if (string.IsNullOrWhiteSpace(studentID))
+                
+                if (string.IsNullOrEmpty(keyword))
                 {
-                    MessageBox.Show("Vui lòng nhập mã số sinh viên cần xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Vui lòng nhập tên sinh viên cần tìm!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                using (StudentDBContext context = new StudentDBContext())
+            
+                var listSinhVien = context.Sinhviens
+                    .Where(sv => sv.HoTenSV.Contains(keyword))
+                    .ToList();
+
+      
+                if (listSinhVien.Count == 0)
                 {
-                    // Tìm sinh viên theo MSSV
-                    STUDENT studentToDelete = context.STUDENTs.FirstOrDefault(s => s.STUDENTID == studentID);
-
-                    if (studentToDelete == null)
-                    {
-                        MessageBox.Show("Không tìm thấy MSSV cần xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                    else
-                    {
-                        DialogResult result = MessageBox.Show("Bạn có chắc chắn muốn xóa sinh viên này không?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (result == DialogResult.Yes)
-                        {
-                            context.STUDENTs.Remove(studentToDelete);
-                            context.SaveChanges();
-
-                            MessageBox.Show("Xóa sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            BindGrid(context.STUDENTs.ToList());
-                            ResetInput();
-                        }
-                    }
+                    MessageBox.Show($"Không tìm thấy sinh viên nào có tên chứa '{keyword}'!", "Kết quả tìm kiếm", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
                 }
+                BindGrid(listSinhVien);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+
+
     }
 }
